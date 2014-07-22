@@ -29,16 +29,16 @@ public class Simulation {
 	public static double[] meanBeUtilization = new double[runNumber];
 
 	// bound
-	 public static int systemBound = 250;
-	 public static int newSessionDropped = 0;
-	 public static int runningSessionDropped = 0;
+	public static int systemBound = 250;
+	public static int newSessionDropped = 0;
+	public static int runningSessionDropped = 0;
 	// bound fine
-	public static Statistics frontEnd = new Statistics(0.0, 0.0, 0.0);
-	public static Statistics backEnd = new Statistics(0.0, 0.0, 0.0);
-	public static Statistics infiniteServer = new Statistics(0.0, 0.0, 0.0);
+	public static Statistics frontEnd;
+	public static Statistics backEnd ;
+	public static Statistics infiniteServer;
 
 	public static void main(String[] args) throws IOException {
-		
+
 		for (stop = 1068; stop < stopMaxValue; stop++) {
 			for (int i = 0; i < runNumber; i++) {
 				sessionList = new ArrayList<Session>();
@@ -51,6 +51,9 @@ public class Simulation {
 				generator = new Rngs();
 				throughput = 0.0;
 				arrival = 0;
+				frontEnd = new Statistics(0.0, 0.0, 0.0);
+				backEnd = new Statistics(0.0, 0.0, 0.0);
+				infiniteServer = new Statistics(0.0, 0.0, 0.0);
 				// bound
 				newSessionDropped = 0;
 				runningSessionDropped = 0;
@@ -74,10 +77,12 @@ public class Simulation {
 			beUtilizationRes = beUtilizationRes / runNumber;
 			PrintWriter throughputWriter = new PrintWriter(new BufferedWriter(
 					new FileWriter("meanThroughput.txt", true)));
-			PrintWriter feUtilizationWriter = new PrintWriter(new BufferedWriter(
-					new FileWriter("meanFeUtilization.txt", true)));
-			PrintWriter beUtilizationWriter = new PrintWriter(new BufferedWriter(
-					new FileWriter("meanBeUtilization.txt", true)));
+			PrintWriter feUtilizationWriter = new PrintWriter(
+					new BufferedWriter(new FileWriter("meanFeUtilization.txt",
+							true)));
+			PrintWriter beUtilizationWriter = new PrintWriter(
+					new BufferedWriter(new FileWriter("meanBeUtilization.txt",
+							true)));
 			throughputWriter.println(throughputRes);
 			throughputWriter.close();
 			feUtilizationWriter.println(feUtilizationRes);
@@ -109,7 +114,7 @@ public class Simulation {
 				systemClock.setNext(nextArrivalTime);
 			}
 			// System.out.println("Clock corrente =" + systemClock.getNext());
-		
+
 			// ----------------------------------------------------------
 			if (frontEndRequestsNumber > 0) {
 				frontEnd.setAveragedPopulation(frontEnd.getAveragedPopulation()
@@ -143,38 +148,36 @@ public class Simulation {
 
 			if (systemClock.getCurrent() == nextArrivalTime) {
 				// bound
-				 if (frontEndRequestsNumber + backEndRequestsNumber <
-				 systemBound) {
-				// bound fine
-				arrivedSessions++;
-				frontEndRequestsNumber++;
-				Session newSession = new Session();
-				newSession.setArrivalTime(systemClock.getCurrent());
-				newSession.setRequestNumber(GetNewRequestsNumber());
-				newSession
-						.setFrontEndCompletionTime(GetMaxFrontEndCompletionTime()
-								+ GetFrontEndService());
+				if (frontEndRequestsNumber + backEndRequestsNumber < systemBound) {
+					// bound fine
+					arrivedSessions++;
+					frontEndRequestsNumber++;
+					Session newSession = new Session();
+					newSession.setArrivalTime(systemClock.getCurrent());
+					newSession.setRequestNumber(GetNewRequestsNumber());
+					newSession
+							.setFrontEndCompletionTime(GetMaxFrontEndCompletionTime()
+									+ GetFrontEndService());
 
-				sessionList.add(newSession);
+					sessionList.add(newSession);
 
-				if (systemClock.getCurrent() < stop) {
+					if (systemClock.getCurrent() < stop) {
 
-					nextArrivalTime = GetArrival();
-				} else {
-					nextArrivalTime = Double.MAX_VALUE;
-
-				}
-				// bound
-				 } else {
-				 newSessionDropped++;
-				 if (systemClock.getCurrent() < stop) {
-				
-				 nextArrivalTime = GetArrival();
-				 }
-				 else {
+						nextArrivalTime = GetArrival();
+					} else {
 						nextArrivalTime = Double.MAX_VALUE;
-				 }
-				 }
+
+					}
+					// bound
+				} else {
+					newSessionDropped++;
+					if (systemClock.getCurrent() < stop) {
+
+						nextArrivalTime = GetArrival();
+					} else {
+						nextArrivalTime = Double.MAX_VALUE;
+					}
+				}
 				// bound fine
 
 			} else if (sessionList.get(currentSession) != null
@@ -217,42 +220,42 @@ public class Simulation {
 					&& systemClock.getCurrent() == sessionList.get(
 							currentSession).getThinkTimeCompletionTime()) {
 				// bound
-				 if (frontEndRequestsNumber + backEndRequestsNumber <
-				 systemBound) {
-				// // bound fine
-				sessionList.get(currentSession).setThinkTimeCompletionTime(
-						Double.MAX_VALUE);
-				sessionList.get(currentSession).setFrontEndCompletionTime(
-						GetMaxFrontEndCompletionTime() + GetFrontEndService());
-				frontEndRequestsNumber++;
-				// bound
-				 } else {
-				 runningSessionDropped++;
-				 sessionList.remove(currentSession);
-				 }
+				if (frontEndRequestsNumber + backEndRequestsNumber < systemBound) {
+					// // bound fine
+					sessionList.get(currentSession).setThinkTimeCompletionTime(
+							Double.MAX_VALUE);
+					sessionList.get(currentSession).setFrontEndCompletionTime(
+							GetMaxFrontEndCompletionTime()
+									+ GetFrontEndService());
+					frontEndRequestsNumber++;
+					// bound
+				} else {
+					runningSessionDropped++;
+					sessionList.remove(currentSession);
+				}
 				// bound fine
 
 			}
 
-//			 System.out
-//			 .println("-------------------------------------------------------------------------");
-//			 System.out.println("sessioni nel sistema =" +
-//			 sessionList.size());
-//			 System.out.println("Numero di sessioni arrivate nel sistema ="
-//			 + arrivedSessions);
-//			 System.out.println("Numero di sessioni partite dal sistema ="
-//			 + completedSessions);
-//			 System.out.println("Numero di sessioni nel front end ="
-//			 + frontEndRequestsNumber);
-//			 System.out.println("Numero di sessioni nel back end ="
-//			 + backEndRequestsNumber);
-//			 System.out.println("Numero di sessioni in think time ="
-//			 + (arrivedSessions - completedSessions
-//			 - frontEndRequestsNumber - backEndRequestsNumber));
-//			 System.out.println("Prossimo istante di completamento ="
-//			 + nextCompletionTime);
-//			 System.out
-//			 .println("Prossimo istante di arrivo =" + nextArrivalTime);
+			// System.out
+			// .println("-------------------------------------------------------------------------");
+			// System.out.println("sessioni nel sistema =" +
+			// sessionList.size());
+			// System.out.println("Numero di sessioni arrivate nel sistema ="
+			// + arrivedSessions);
+			// System.out.println("Numero di sessioni partite dal sistema ="
+			// + completedSessions);
+			// System.out.println("Numero di sessioni nel front end ="
+			// + frontEndRequestsNumber);
+			// System.out.println("Numero di sessioni nel back end ="
+			// + backEndRequestsNumber);
+			// System.out.println("Numero di sessioni in think time ="
+			// + (arrivedSessions - completedSessions
+			// - frontEndRequestsNumber - backEndRequestsNumber));
+			// System.out.println("Prossimo istante di completamento ="
+			// + nextCompletionTime);
+			// System.out
+			// .println("Prossimo istante di arrivo =" + nextArrivalTime);
 		}
 		frontEnd.setAveragePopulationInQueue(frontEnd
 				.getAveragePopulationInQueue() / systemClock.getCurrent());
@@ -296,8 +299,8 @@ public class Simulation {
 
 		// -----------------write on file
 		// bound
-//		 System.out.println("Sessioni nuove rifiutate " + newSessionDropped);
-//		 System.out.println("Sessioni stoppate " + runningSessionDropped);
+		// System.out.println("Sessioni nuove rifiutate " + newSessionDropped);
+		// System.out.println("Sessioni stoppate " + runningSessionDropped);
 		// bound fine
 	}
 
